@@ -1,5 +1,15 @@
-def filter_by_state(data: list, state: str = "EXECUTED") -> list:
-    """Принимает список словарей и (опц.) значение для ключа state."""
+from typing import Any
+
+
+def filter_by_state(
+    data: list[dict[str, Any]], state: str = "EXECUTED"
+) -> list[dict[str, Any]]:
+    """Фильтрует список словарей по значению ключа 'state'.
+
+    :param data: Список словарей, содержащих информацию об операциях.
+    :param state: Строка для фильтрации (по умолчанию 'EXECUTED').
+    :return: Новый список словарей, соответствующих указанному статусу.
+    """
     filtered_data = []
 
     for item in data:
@@ -7,9 +17,16 @@ def filter_by_state(data: list, state: str = "EXECUTED") -> list:
             filtered_data.append(item)
 
     return filtered_data
-def sort_by_date(data: list, reverse: bool = True) -> list:
-    """
-    Принимает список словарей и возвращает новый список,
-    отсортированный по ключу 'date'. По умолчанию сортировка по убыванию.
+
+
+def sort_by_date(
+    data: list[dict[str, Any]], reverse: bool = False
+) -> list[dict[str, Any]]:
+    """Сортирует список словарей по ключу 'date'.
+
+    :param data: Список словарей, содержащих информацию об операциях.
+    :param reverse: Флаг направления сортировки (по умолчанию False — по
+        возрастанию).
+    :return: Новый отсортированный список словарей.
     """
     return sorted(data, key=lambda item: item.get("date", ""), reverse=reverse)

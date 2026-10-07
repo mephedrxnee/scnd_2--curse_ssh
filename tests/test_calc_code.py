@@ -2,7 +2,7 @@ import pytest
 from src.masks import get_mask_card_number, get_mask_account
 from src.processing import filter_by_state, sort_by_date
 from src.widget import mask_account_card, get_date
-
+from src.processing import filter_by_currency, transaction_descriptions, card_number_generator
 
 # --- ТЕСТЫ ДЛЯ MODУЛЯ processing.py ---
 
@@ -50,3 +50,40 @@ def test_mask_account_card_account():
 def test_get_date():
     """Проверка корректного изменения формата отображения даты"""
     assert get_date("2018-07-11T02:26:18.671407") == "11.07.2018"
+
+    # Тесты для filter_by_currency
+    def test_filter_by_currency():
+        transactions = [
+            {"id": 1, "currency": "USD", "description": "Перевод"},
+            {"id": 2, "currency": "RUB", "description": "Оплата"},
+            {"id": 3, "currency": "USD", "description": "Покупка"},
+        ]
+        result = list(filter_by_currency(transactions, "USD"))
+        assert len(result) == 2
+        assert result[0]["id"] == 1
+        assert result[1]["id"] == 3
+
+    # Тесты для transaction_descriptions
+    def test_transaction_descriptions():
+        transactions = [
+            {"id": 1, "description": "Перевод другу"},
+            {"id": 2, "description": "Оплата связи"},
+            {"id": 3},  # Нет описания, должен быть пропущен
+        ]
+        result = list(transaction_descriptions(transactions))
+        assert result == ["Перевод другу", "Оплата связи"]
+
+    # Тесты для card_number_generator
+    def test_card_number_generator():
+        # Проверяем генерацию от 1 до 3
+        generator = card_number_generator(1, 3)
+        assert next(generator) == "0000 0000 0000 0001"
+        assert next(generator) == "0000 0000 0000 0002"
+        assert next(generator) == "0000 0000 0000 0003"
+
+        # Проверяем, что итератор заканчивается
+        try:
+            next(generator)
+            assert False, "Итератор должен был закончиться"
+        except StopIteration:
+            pass

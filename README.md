@@ -30,3 +30,15 @@ executed_data = filter_by_state(data)
 
 # Сортировка по возрастанию даты
 sorted_data = sort_by_date(data)
+
+## Работа с JSON и конвертация валют
+Модуль `src/utils.py` предоставляет:
+- `read_json_file(filepath)` — чтение транзакций из JSON-файла.
+- `convert_to_rub(transaction)` — конвертация суммы транзакции в рубли (для USD/EUR используется внешнее API).
+
+### Переменные окружения
+Для работы приложения создайте файл `.env` на основе `.env.example` и укажите API-ключ:
+
+
+### Логирование
+Логи работы модулей `masks` и `utils` записываются в папку `logs/` (файлы `masks.log` и `utils.log`).

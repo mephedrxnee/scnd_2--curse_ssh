@@ -32,8 +32,8 @@ def test_convert_to_rub_rub() -> None:
 
 @patch("src.utils.requests.get")
 def test_convert_to_rub_usd(mock_get) -> None:
-    # Настраиваем мок-ответ от API
-    mock_get.return_value.json.return_value = {"rates": {"RUB": 90.0}}
+    """Успешная конвертация USD в RUB через apilayer."""
+    mock_get.return_value.json.return_value = {"result": 9000.0}
     mock_get.return_value.raise_for_status.return_value = None
 
     transaction = {"operationAmount": {"amount": "100", "currency": {"code": "USD"}}}
@@ -41,3 +41,15 @@ def test_convert_to_rub_usd(mock_get) -> None:
 
     assert result == 9000.0
     mock_get.assert_called_once()
+
+
+@patch("src.utils.requests.get")
+def test_convert_to_rub_eur(mock_get) -> None:
+    """Успешная конвертация EUR в RUB через apilayer."""
+    mock_get.return_value.json.return_value = {"result": 9500.0}
+    mock_get.return_value.raise_for_status.return_value = None
+
+    transaction = {"operationAmount": {"amount": "100", "currency": {"code": "EUR"}}}
+    result = convert_to_rub(transaction)
+
+    assert result == 9500.0

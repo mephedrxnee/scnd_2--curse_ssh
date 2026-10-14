@@ -48,3 +48,7 @@ disallow_untyped_defs = false
 [[tool.mypy.overrides]]
 module = "pandas.*"
 ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = ["requests.*", "dotenv.*"]
+ignore_missing_imports = true

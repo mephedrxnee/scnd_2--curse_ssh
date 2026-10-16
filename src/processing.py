@@ -1,3 +1,5 @@
+import re
+from collections import Counter
 from typing import Any, Iterator
 
 
@@ -57,3 +59,37 @@ def card_number_generator(start: int, stop: int) -> Iterator[str]:
             f"{card_str[:4]} {card_str[4:8]} {card_str[8:12]} {card_str[12:]}"
         )
         yield formatted_card
+
+
+def process_bank_search(data: list[dict], search: str) -> list[dict]:
+    """
+    Ищет транзакции, в описании которых есть заданная строка (без учёта регистра).
+
+    :param data: Список словарей с транзакциями.
+    :param search: Строка для поиска в поле description.
+    :return: Список словарей с подходящими транзакциями.
+    """
+    pattern = re.compile(re.escape(search), re.IGNORECASE)
+    result = []
+    for item in data:
+        description = item.get("description", "")
+        if description and pattern.search(description):
+            result.append(item)
+    return result
+
+
+def process_bank_operations(data: list[dict], categories: list[str]) -> dict:
+    """
+    Считает количество операций по каждой категории.
+
+    :param data: Список словарей с транзакциями.
+    :param categories: Список категорий для подсчёта.
+    :return: Словарь, где ключ — категория, значение — количество операций.
+    """
+    descriptions = [
+        item.get("description", "") for item in data if item.get("description")
+    ]
+    counter = Counter(descriptions)
+    return {
+        category: counter[category] for category in categories if counter[category] > 0
+    }

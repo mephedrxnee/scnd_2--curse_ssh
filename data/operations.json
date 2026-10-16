@@ -9,7 +9,8 @@
         "name": "USD",
         "code": "USD"
       }
-    }
+    },
+    "description": "Перевод организации"
   },
   {
     "id": 2,
@@ -21,6 +22,7 @@
         "name": "RUB",
         "code": "RUB"
       }
-    }
+    },
+    "description": "Открытие вклада"
   }
 ]

@@ -39,6 +39,16 @@ sorted_data = sort_by_date(data)
 ### Переменные окружения
 Для работы приложения создайте файл `.env` на основе `.env.example` и укажите API-ключ:
 
-
 ### Логирование
 Логи работы модулей `masks` и `utils` записываются в папку `logs/` (файлы `masks.log` и `utils.log`).
+
+### Поиск и подсчёт операций
+
+Модуль `src/processing.py`:
+- `process_bank_search(data, search)` — поиск транзакций по описанию (регулярка, без регистра).
+- `process_bank_operations(data, categories)` — подсчёт количества операций по категориям через `Counter`.
+
+### Запуск программы
+
+```bash
+python -m src.main

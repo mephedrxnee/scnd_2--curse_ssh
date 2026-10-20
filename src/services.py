@@ -27,9 +27,12 @@ def cashback_categories(data: list[dict[str, Any]], year: int, month: int) -> st
         amount = abs(float(t.get("Сумма операции", 0)))
         cats[category] = cats.get(category, 0) + amount * 0.01  # 1%
 
-    return json.dumps(
-        {k: int(v) for k, v in cats.items()}, ensure_ascii=False, indent=2
-    )
+    # Сортируем по убыванию кешбэка и берем топ-3
+    sorted_cats = sorted(cats.items(), key=lambda x: x[1], reverse=True)[:3]
+
+    # Возвращаем словарь с правильными типами (int)
+    result = {k: int(round(v)) for k, v in sorted_cats}
+    return json.dumps(result, ensure_ascii=False, indent=2)
 
 
 def investment_bank(

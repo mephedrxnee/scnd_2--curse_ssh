@@ -140,11 +140,9 @@ def events_page(
     dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
 
     if period == "W":
-        start_date = dt.replace(hour=0, minute=0, second=0)
-        # Логика для недели (упрощенно: минус 7 дней)
         from datetime import timedelta
 
-        start_date -= timedelta(days=7)
+        start_date = dt.replace(hour=0, minute=0, second=0) - timedelta(days=7)
     elif period == "Y":
         start_date = dt.replace(month=1, day=1, hour=0, minute=0, second=0)
     elif period == "ALL":
@@ -155,6 +153,7 @@ def events_page(
     expenses = 0.0
     income = 0.0
     exp_by_cat: dict[str, float] = {}
+    transfers_cash: dict[str, float] = {}  # Новый словарь для переводов/наличных
 
     for t in transactions:
         try:
@@ -168,27 +167,38 @@ def events_page(
             if amount < 0:
                 exp_amt = abs(amount)
                 expenses += exp_amt
-                if cat not in ("Переводы", "Наличные"):
+                # Разделяем обычные траты и переводы/наличные
+                if cat in ("Переводы", "Наличные"):
+                    transfers_cash[cat] = transfers_cash.get(cat, 0) + exp_amt
+                else:
                     exp_by_cat[cat] = exp_by_cat.get(cat, 0) + exp_amt
             elif amount > 0:
                 income += amount
         except ValueError:
             pass
 
-    # Формируем топ-7 категорий
+    # Формируем топ-7 категорий для обычных трат
     sorted_cats = sorted(exp_by_cat.items(), key=lambda x: x[1], reverse=True)
     main_cats = [{"category": k, "amount": round(v)} for k, v in sorted_cats[:7]]
     other_amt = sum(v for k, v in sorted_cats[7:])
     if other_amt > 0:
         main_cats.append({"category": "Остальное", "amount": round(other_amt)})
 
+    # Формируем список для переводов и наличных
+    transfers_list = [
+        {"category": k, "amount": round(v)} for k, v in transfers_cash.items()
+    ]
+
     data = {
         "expenses": {
             "total_amount": round(expenses),
             "main": main_cats,
-            "transfers_and_cash": [],  # Можно добавить логику для переводов
+            "transfers_and_cash": transfers_list,
         },
-        "income": {"total_amount": round(income), "main": []},
+        "income": {
+            "total_amount": round(income),
+            "main": [],  # Можно оставить пустым или сделать аналогичную группировку
+        },
         "currency_rates": get_currency_rates(settings.get("user_currencies", [])),
         "stock_prices": get_stock_prices(settings.get("user_stocks", [])),
     }

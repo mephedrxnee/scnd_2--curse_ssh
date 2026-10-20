@@ -1,6 +1,0 @@
-.idea/
-.env
-logs/
-.pytest_cache/
-htmlcov/
-.coverage

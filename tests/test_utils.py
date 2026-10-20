@@ -5,6 +5,7 @@ from src.utils import convert_to_rub, read_json_file
 
 # --- Тесты для read_json_file ---
 def test_read_json_file_success() -> None:
+    """Успешное чтение JSON-файла."""
     mock_data = '[{"id": 1, "amount": "100"}]'
     with patch("builtins.open", mock_open(read_data=mock_data)):
         result = read_json_file("dummy.json")
@@ -12,12 +13,14 @@ def test_read_json_file_success() -> None:
 
 
 def test_read_json_file_not_found() -> None:
+    """Файл не найден."""
     with patch("builtins.open", side_effect=FileNotFoundError):
         result = read_json_file("dummy.json")
         assert result == []
 
 
 def test_read_json_file_not_a_list() -> None:
+    """В файле не список, а словарь."""
     mock_data = '{"id": 1}'
     with patch("builtins.open", mock_open(read_data=mock_data)):
         result = read_json_file("dummy.json")
@@ -26,14 +29,16 @@ def test_read_json_file_not_a_list() -> None:
 
 # --- Тесты для convert_to_rub ---
 def test_convert_to_rub_rub() -> None:
+    """Конвертация не требуется, так как валюта уже рубли."""
     transaction = {"operationAmount": {"amount": "5000", "currency": {"code": "RUB"}}}
     assert convert_to_rub(transaction) == 5000.0
 
 
 @patch("src.utils.requests.get")
 def test_convert_to_rub_usd(mock_get) -> None:
-    # Настраиваем мок-ответ от API
-    mock_get.return_value.json.return_value = {"rates": {"RUB": 90.0}}
+    """Успешная конвертация USD в RUB через apilayer."""
+    # Имитируем правильный ответ от apilayer
+    mock_get.return_value.json.return_value = {"result": 9000.0}
     mock_get.return_value.raise_for_status.return_value = None
 
     transaction = {"operationAmount": {"amount": "100", "currency": {"code": "USD"}}}

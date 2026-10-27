@@ -1,9 +1,10 @@
 import json
 import logging
-import requests
 import os
 from datetime import datetime
 from typing import Any
+
+import requests
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -145,7 +146,12 @@ def main_page(
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
-def events_page(date_str: str, transactions: list[dict[str, Any]], settings: dict[str, Any], period: str = "M") -> str:
+def events_page(
+    date_str: str,
+    transactions: list[dict[str, Any]],
+    settings: dict[str, Any],
+    period: str = "M",
+) -> str:
     """
     Страница событий: возвращает JSON с расходами, поступлениями, курсами и акциями.
     period: W - неделя, M - месяц, Y - год, ALL - все данные.
@@ -154,6 +160,7 @@ def events_page(date_str: str, transactions: list[dict[str, Any]], settings: dic
 
     if period == "W":
         from datetime import timedelta
+
         start_date = dt.replace(hour=0, minute=0, second=0) - timedelta(days=7)
     elif period == "Y":
         start_date = dt.replace(month=1, day=1, hour=0, minute=0, second=0)
@@ -197,19 +204,18 @@ def events_page(date_str: str, transactions: list[dict[str, Any]], settings: dic
         main_cats.append({"category": "Остальное", "amount": round(other_amt)})
 
     # Формируем список для переводов и наличных
-    transfers_list = [{"category": k, "amount": round(v)} for k, v in transfers_cash.items()]
+    transfers_list = [
+        {"category": k, "amount": round(v)} for k, v in transfers_cash.items()
+    ]
 
     data = {
         "expenses": {
             "total_amount": round(expenses),
             "main": main_cats,
-            "transfers_and_cash": transfers_list
+            "transfers_and_cash": transfers_list,
         },
-        "income": {
-            "total_amount": round(income),
-            "main": []
-        },
+        "income": {"total_amount": round(income), "main": []},
         "currency_rates": get_currency_rates(settings.get("user_currencies", [])),
-        "stock_prices": get_stock_prices(settings.get("user_stocks", []))
+        "stock_prices": get_stock_prices(settings.get("user_stocks", [])),
     }
     return json.dumps(data, ensure_ascii=False, indent=2)

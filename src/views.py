@@ -1,9 +1,15 @@
 import json
 import logging
+import requests
+import os
 from datetime import datetime
 from typing import Any
+from dotenv import load_dotenv
 
-import requests
+load_dotenv()
+API_KEY = os.getenv("API_KEY", "")
+ALPHA_VANTAGE_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,15 +44,27 @@ def get_currency_rates(currencies: list[str]) -> list[dict[str, Any]]:
 
 
 def get_stock_prices(stocks: list[str]) -> list[dict[str, Any]]:
-    """Получает цены акций (демо-заглушка, так как бесплатные API нестабильны)."""
+    """Получает реальные цены акций через API Alpha Vantage."""
     prices = []
     for stock in stocks:
         try:
-            # В реальном проекте здесь был бы вызов API (например, Yahoo Finance)
-            # Для сдачи курсовой достаточно вернуть фейковые данные, чтобы не падало
-            prices.append(
-                {"stock": stock, "price": round(100.0 + len(stock) * 15.5, 2)}
-            )
+            url = "https://www.alphavantage.co/query"
+            params = {
+                "function": "GLOBAL_QUOTE",
+                "symbol": stock,
+                "apikey": API_KEY,  # Ваш ключ из .env
+            }
+            resp = requests.get(url, params=params, timeout=5)
+            resp.raise_for_status()
+            data = resp.json()
+
+            # Парсим ответ от Alpha Vantage
+            price_str = data.get("Global Quote", {}).get("05. price")
+            if price_str:
+                prices.append({"stock": stock, "price": round(float(price_str), 2)})
+            else:
+                logger.warning(f"Не удалось получить цену для {stock}: {data}")
+                prices.append({"stock": stock, "price": None})
         except Exception as e:
             logger.error(f"Ошибка API акций ({stock}): {e}")
             prices.append({"stock": stock, "price": None})
@@ -127,12 +145,7 @@ def main_page(
     return json.dumps(data, ensure_ascii=False, indent=2)
 
 
-def events_page(
-    date_str: str,
-    transactions: list[dict[str, Any]],
-    settings: dict[str, Any],
-    period: str = "M",
-) -> str:
+def events_page(date_str: str, transactions: list[dict[str, Any]], settings: dict[str, Any], period: str = "M") -> str:
     """
     Страница событий: возвращает JSON с расходами, поступлениями, курсами и акциями.
     period: W - неделя, M - месяц, Y - год, ALL - все данные.
@@ -140,11 +153,8 @@ def events_page(
     dt = datetime.strptime(date_str, "%Y-%m-%d %H:%M:%S")
 
     if period == "W":
-        start_date = dt.replace(hour=0, minute=0, second=0)
-        # Логика для недели (упрощенно: минус 7 дней)
         from datetime import timedelta
-
-        start_date -= timedelta(days=7)
+        start_date = dt.replace(hour=0, minute=0, second=0) - timedelta(days=7)
     elif period == "Y":
         start_date = dt.replace(month=1, day=1, hour=0, minute=0, second=0)
     elif period == "ALL":
@@ -155,6 +165,7 @@ def events_page(
     expenses = 0.0
     income = 0.0
     exp_by_cat: dict[str, float] = {}
+    transfers_cash: dict[str, float] = {}  # Словарь для Переводов и Наличных
 
     for t in transactions:
         try:
@@ -168,28 +179,37 @@ def events_page(
             if amount < 0:
                 exp_amt = abs(amount)
                 expenses += exp_amt
-                if cat not in ("Переводы", "Наличные"):
+                # Разделяем обычные траты и переводы/наличные
+                if cat in ("Переводы", "Наличные"):
+                    transfers_cash[cat] = transfers_cash.get(cat, 0) + exp_amt
+                else:
                     exp_by_cat[cat] = exp_by_cat.get(cat, 0) + exp_amt
             elif amount > 0:
                 income += amount
         except ValueError:
             pass
 
-    # Формируем топ-7 категорий
+    # Формируем топ-7 категорий для обычных трат
     sorted_cats = sorted(exp_by_cat.items(), key=lambda x: x[1], reverse=True)
     main_cats = [{"category": k, "amount": round(v)} for k, v in sorted_cats[:7]]
     other_amt = sum(v for k, v in sorted_cats[7:])
     if other_amt > 0:
         main_cats.append({"category": "Остальное", "amount": round(other_amt)})
 
+    # Формируем список для переводов и наличных
+    transfers_list = [{"category": k, "amount": round(v)} for k, v in transfers_cash.items()]
+
     data = {
         "expenses": {
             "total_amount": round(expenses),
             "main": main_cats,
-            "transfers_and_cash": [],  # Можно добавить логику для переводов
+            "transfers_and_cash": transfers_list
         },
-        "income": {"total_amount": round(income), "main": []},
+        "income": {
+            "total_amount": round(income),
+            "main": []
+        },
         "currency_rates": get_currency_rates(settings.get("user_currencies", [])),
-        "stock_prices": get_stock_prices(settings.get("user_stocks", [])),
+        "stock_prices": get_stock_prices(settings.get("user_stocks", []))
     }
     return json.dumps(data, ensure_ascii=False, indent=2)

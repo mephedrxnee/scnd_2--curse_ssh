@@ -48,3 +48,6 @@ mypy_path = "."
 [[tool.mypy.overrides]]
 module = "tests.*"
 disallow_untyped_defs = false
+
+[tool.poetry]
+package-mode = false
